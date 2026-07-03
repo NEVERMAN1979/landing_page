@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lamp Login Interaction</title>
+    <style>
+        /* Base Reset */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* The Bedroom Environment */
+        body {
+            height: 100vh;
+            width: 100vw;
+            background-color: #050505;
+            background-image: url('https://images.unsplash.com/photo-1531835551805-16d89408d511?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: multiply; /* Darkens the image drastically */
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.5s ease;
+            position: relative;
+        }
+
+        /* Ambient Room Light (Hidden by default) */
+        .room-light {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150vw;
+            height: 150vh;
+            background: radial-gradient(circle, rgba(255,180,80,0.15) 0%, rgba(0,0,0,0) 60%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            z-index: 1;
+        }
+
+        /* Container for Lamp and Form */
+        .scene-container {
+            display: flex;
+            align-items: center;
+            gap: 50px;
+            z-index: 2;
+            position: relative;
+        }
+
+        /* --- LAMP CSS --- */
+        .lamp-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: -100px;
+        }
+
+        .lampshade {
+            width: 140px;
+            height: 100px;
+            background-color: #2a2a2a;
+            clip-path: polygon(25% 0, 75% 0, 100% 100%, 0 100%);
+            position: relative;
+            z-index: 3;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .lamp-pole {
+            width: 8px;
+            height: 180px;
+            background: linear-gradient(to right, #111, #333, #111);
+            z-index: 2;
+        }
+
+        .lamp-base {
+            width: 90px;
+            height: 15px;
+            background: linear-gradient(to right, #111, #444, #111);
+            border-radius: 10px 10px 0 0;
+            z-index: 2;
+        }
+
+        /* The Pull Thread */
+        .thread-container {
+            position: absolute;
+            top: 100px; /* Right below lampshade */
+            right: 40px;
+            z-index: 4;
+            cursor: pointer;
+        }
+
+        .thread {
+            width: 2px;
+            height: 60px;
+            background-color: #888;
+            margin: 0 auto;
+            transition: transform 0.15s ease-out;
+        }
+
+        .thread-bob {
+            width: 10px;
+            height: 10px;
+            background-color: #bfa054;
+            border-radius: 50%;
+            margin-left: -4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            transition: transform 0.15s ease-out;
+        }
+
+        /* Pull Animation Classes */
+        .thread-container.pulled .thread { transform: scaleY(1.5); transform-origin: top; }
+        .thread-container.pulled .thread-bob { transform: translateY(30px); }
+
+        /* --- LOGIN FORM CSS (Glassmorphism) --- */
+        .login-card {
+            width: 350px;
+            padding: 40px 30px;
+            background: rgba(20, 20, 20, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            opacity: 0;
+            transform: translateX(-30px) scale(0.95);
+            pointer-events: none; /* Prevents clicking when invisible */
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 0 rgba(255, 170, 50, 0);
+        }
+
+        .login-card h2 {
+            color: #fff;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: #ffb450;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #ffb450, #f58220);
+            border: none;
+            border-radius: 8px;
+            color: #111;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 180, 80, 0.4);
+        }
+
+        /* --- "ON" STATE STYLES (DHTML Triggers) --- */
+        body.light-on {
+            background-color: #222; /* Lightens the room base slightly */
+        }
+
+        body.light-on .room-light {
+            opacity: 1;
+        }
+
+        body.light-on .lampshade {
+            background-color: #fff2cc; /* Warm light color */
+            box-shadow: 0 30px 80px 20px rgba(255, 190, 80, 0.8), 
+                        inset 0 -20px 30px rgba(255, 160, 0, 0.5);
+        }
+
+        body.light-on .login-card {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+            pointer-events: auto;
+            border: 1px solid rgba(255, 200, 100, 0.4);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 
+                        0 0 60px rgba(255, 160, 50, 0.15); /* Soft outer glow */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient glow overlay -->
+    <div class="room-light"></div>
+
+    <div class="scene-container">
+        <!-- The Interactive Lamp -->
+        <div class="lamp-wrapper">
+            <div class="lampshade"></div>
+            <div class="lamp-pole"></div>
+            <div class="lamp-base"></div>
+            
+            <!-- The Thread -->
+            <div class="thread-container" id="pull-cord">
+                <div class="thread"></div>
+                <div class="thread-bob"></div>
+            </div>
+        </div>
+
+        <!-- The Glowing Interface -->
+        <div class="login-card">
+            <h2>Welcome Back</h2>
+            <div class="input-group">
+                <input type="text" placeholder="Username">
+            </div>
+            <div class="input-group">
+                <input type="password" placeholder="Password">
+            </div>
+            <button class="login-btn">LOGIN</button>
+        </div>
+    </div>
+
+    <!-- Hidden audio element for the mechanical click -->
+    <audio id="click-sound" src="https://actions.google.com/sounds/v1/foley/mechanical_switch_click.ogg" preload="auto"></audio>
+
+    <script>
+        // Select DOM Elements
+        const pullCord = document.getElementById('pull-cord');
+        const clickSound = document.getElementById('click-sound');
+        const body = document.body;
+
+        // Add Interaction Logic
+        pullCord.addEventListener('mousedown', function() {
+            // 1. Trigger the physical pull animation via CSS class
+            pullCord.classList.add('pulled');
+            
+            // 2. Play the click sound
+            clickSound.currentTime = 0; // Reset sound to start if clicked rapidly
+            clickSound.play();
+
+            // 3. Toggle the light state after a tiny delay to sync with the "bottom" of the pull
+            setTimeout(() => {
+                body.classList.toggle('light-on');
+            }, 100);
+        });
+
+        // Remove the pull animation when the mouse is released
+        window.addEventListener('mouseup', function() {
+            pullCord.classList.remove('pulled');
+        });
+
+        // Fallback for touch devices (mobile)
+        pullCord.addEventListener('touchstart', function(e) {
+            e.preventDefault(); // Prevent double-firing with mouse events
+            pullCord.classList.add('pulled');
+            clickSound.currentTime = 0;
+            clickSound.play();
+            
+            setTimeout(() => {
+                body.classList.toggle('light-on');
+            }, 100);
+        });
+
+        window.addEventListener('touchend', function() {
+            pullCord.classList.remove('pulled');
+        });
+    </script>
+</body>
+</html>
